@@ -35,7 +35,6 @@ class PossessionSimulator(object):
         self.pass_caught = pass_success_calculator
 
     def simulate_possession(self, disk_position):
-        possession = True
         while True:
 
             pass_distance = self.generate_pass_distance()
@@ -50,76 +49,92 @@ class PossessionSimulator(object):
             if disk_position <= 0:
                 return (True, False)
 
+class Team(object):
+    def __init__(self):
+        self.score = 0
+        self.games_won = 0
+
 class GameSimulator(object):
-    def __init__(self, simulate_point):
+    def __init__(self, simulate_point, teams):
         self.simulate_point = simulate_point
+        self.teams = teams
 
 
     def simulate_game(self):
-        ''' Returns True if the white team won, False if the black team won
 
-        '''
-        white_score, black_score = 0, 0
+        teams = self.teams
 
-        while white_score < 15 and black_score < 15:
-            white_scored  = self.simulate_point()
-            if white_scored: white_score += 1
-            else: black_score += 1
-
-        return white_score > black_score
+        receiving_team, pulling_team = teams
+        receiving_team.score, pulling_team.score = 0, 0
+        while True:
+            self.simulate_point(receiving_team, pulling_team)
+            for team in teams:
+                if team.score == 15:
+                    team.games_won += 1
+                    return
+        
 
 class PointSimulator(object):
     def __init__(self, simulate_possession, starting_disk_position=50):
         self.simulate_possession = simulate_possession
         self.starting_disk_position = starting_disk_position
 
-    def simulate_point(self):
+    def simulate_point(self, receiving_team, pulling_team):
         '''Returns True if white scores, False if black scores.
 
         starting_disk_position represents where the pull is caught.
 
         '''
 
-        white_scored = True
         disk_position = self.starting_disk_position
+        team_on_offense, team_on_defense = receiving_team, pulling_team
 
         while True:
             point_scored, new_disk_position = self.simulate_possession(
                                                         disk_position
                                                                 )
-            if point_scored:
-                return white_scored
+            if point_scored: 
+                team_on_offense.score += 1
+                break
 
             else:
-                white_scored = not white_scored
+                team_on_offense, team_on_defense = (team_on_defense, 
+                                                    team_on_offense)
                 disk_position = 64.0 - new_disk_position
         
 
 
 def main():
 
-    games_to_simulate = 10000
-    white_team_games_won = 0
+    games_to_simulate = 1000
+
     possession_simulator = PossessionSimulator(
                     pass_distance_generator=lambda : random.gauss(40, 80),
                     pass_success_calculator=pass_caught
                                               )
 
+    teams = {'white': Team(), 'black': Team()}
+
     point_simulator = PointSimulator(
                                 possession_simulator.simulate_possession)
 
-    game_simulator = GameSimulator(point_simulator.simulate_point)
+    game_simulator = GameSimulator(point_simulator.simulate_point, 
+                                                        teams.values())
 
 
     for i in xrange(0, games_to_simulate):
-        if game_simulator.simulate_game():
-            white_team_games_won += 1
+        game_simulator.simulate_game()
 
-    black_team_games_won = games_to_simulate - white_team_games_won
-    print 'White team won %s games, back team won %s games' % (
-                                                    white_team_games_won,
-                                                    black_team_games_won
-                                                                )
+    out_str = ( teams.items()[0][0],
+                teams.items()[0][1].games_won,
+                teams.items()[1][0],
+                teams.items()[1][1].games_won,
+              )
+
+
+    print '%s team won %s games, %s team won %s games' % out_str
+
+
 
     return 0
 
