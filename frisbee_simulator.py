@@ -11,6 +11,10 @@ from __future__ import division
 import random
 import sys
 
+DROP_CONSTANT=.94
+
+CATCH_PROBABILITY_FUNC = lambda distance : (1 - ( distance / 110) * .5) * DROP_CONSTANT
+
 
 class Catcher(object):
     '''Catches passes
@@ -18,7 +22,7 @@ class Catcher(object):
     '''
 
     def catch(self, distance):
-        success_rate = 1 - (distance / 110)
+        success_rate = CATCH_PROBABILITY_FUNC(distance)
         rand = random.random()
         return rand <= success_rate
 
@@ -116,12 +120,13 @@ class GameSimulator(object):
 
 class Team(object):
     def __init__(self, decides_pass_distance, catcher):
-        self.score = 0
+        self._score = 0
         self.games_won = 0
         self._decides_pass_distance = decides_pass_distance
         self._catcher = catcher
         self.possessions = 0
         self.attempted_passes = 0
+        self.total_points_scored = 0
         
 
     def pass_distance(self, distance_to_goal):
@@ -131,34 +136,59 @@ class Team(object):
     def catch_pass(self, pass_distance):
         return self._catcher.catch(pass_distance)
 
-def build_team(constant_distance, distance_to_goal):
-    distance_chooser = DistanceChooser(constant_distance, distance_to_goal)
-    return Team(distance_chooser, Catcher())
+    @property
+    def score(self):
+        return self._score
+
+    @score.setter
+    def score(self, value):
+        if value != self._score + 1 and value != 0:
+            raise Exception('can only increment score by 1')
+        self._score = value
+        self.total_points_scored += 1
+
+
+    @property
+    def passes_per_possession(self):
+        return self.attempted_passes / self.possessions
+
+    @property
+    def possessions_per_point(self):
+        return self.possessions / self.total_points_scored
+
+def simulate_games(team_1_distance, 
+                   team_2_distance,
+                   games_to_simulate=1000):
     
-       
+    team_1_distance_chooser = DistanceChooser(team_1_distance)
+    team_2_distance_chooser = DistanceChooser(team_2_distance)
 
+    team_1_catcher = Catcher()
+    team_2_catcher = Catcher()
 
-def main():
+    team_1 = Team(team_1_distance_chooser, team_1_catcher)
+    team_2 = Team(team_2_distance_chooser, team_2_catcher)
 
-    games_to_simulate = 100
-
-    teams = {'white': build_team(20, 0), 'black': build_team(10, 0)}
+    teams = (team_1, team_2)
 
     point_simulator = PointSimulator()
-
-    game_simulator = GameSimulator(point_simulator.simulate_point, 
-                                                        teams.values())
-
-
+    game_simulator = GameSimulator(point_simulator.simulate_point,
+                                   teams)
+       
     for i in xrange(0, games_to_simulate):
         game_simulator.simulate_game()
 
-    for team_name, team in  teams.items():
-        passes_per_possessions = team.attempted_passes / team.possessions
-        str_args = (team_name, team.games_won, passes_per_possessions)
-        print '%s won %s games, with %.02f passes per possession' % str_args
+    return teams
 
+def main():
+    teams = simulate_games(*map(float, sys.argv[1:3]))
+    for team_name, team in  zip(('team_1', 'team_2'), teams):
+        str_args = (team_name, 
+                    team.games_won, 
+                    team.passes_per_possession, 
+                    team.possessions_per_point)
 
+        print '%s won %s games, with %.02f passes per possession, %.02f posessions per point' % str_args
 
     return 0
 
