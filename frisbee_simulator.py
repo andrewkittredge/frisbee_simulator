@@ -114,7 +114,7 @@ def simulate_possession(team, disk_position):
             possession = False
             disk_position = 64
 
-        if -23.0 < disk_position and < 0.0:
+        if -23.0 < disk_position < 0.0:
             scored = True
 
     return scored, disk_position
