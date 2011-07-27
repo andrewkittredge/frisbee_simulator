@@ -92,6 +92,7 @@ def simulate_possession(team, disk_position):
 
     '''
 
+    team.possessions += 1
     possession = True
     scored = False
 
@@ -125,23 +126,25 @@ class PointSimulator(object):
     def simulate_point(self, receiving_team, pulling_team):
 
         disk_position = self.starting_disk_position
-        team_on_offense = receiving_team 
-        team_on_defense = pulling_team
+        offense = receiving_team 
+        defense = pulling_team
+        scored = False
 
-        while True:
-            team_on_offense.possessions += 1
-            point_scored, new_disk_position = simulate_possession(
-                                                    team_on_offense,
+        scored, new_disk_position = simulate_possession(
+                                                    offense,
                                                     disk_position,
-                                                                )
-            if point_scored: 
-                team_on_offense.score += 1
-                break
+                                                        )
 
-            else:
-                team_on_offense, team_on_defense = (team_on_defense, 
-                                                    team_on_offense)
-                disk_position = 64.0 - new_disk_position
+        while not scored:
+            offense, defense = defense, offense
+            disk_position = 64.0 - new_disk_position
+
+            scored, new_disk_position = simulate_possession(
+                                                    offense,
+                                                    disk_position,
+                                                            )
+
+        offense.score += 1
 
 
 class GameSimulator(object):
