@@ -51,23 +51,35 @@ class DistanceChooser(object):
 
 def simulate_possession(team, disk_position):
     '''Returns True if the team scores.
-    Returns false and the position of the disk on a turn
+    Returns false and the position of the disk on a turn.
 
     '''
 
-    while True:
+    possession = True
+    scored = False
+
+    while possession and not scored:
 
         pass_distance = team.pass_distance(disk_position)
         possession = team.catch_pass(pass_distance)
 
         disk_position -= pass_distance
-        not_on_the_field = 87 < disk_position < -23
 
-        if not possession or not_on_the_field:
-            return False, disk_position
+        #Threw it out the back, other team gets the disk at the top of the 
+        #end-zone
+        if disk_position < -23.0:
+            possession = False
+            disk_position = 0
 
-        if disk_position <= 0:
-            return True, 0
+        #Went out of back of end zone, not sure what the rule is. 
+        if disk_position > 87:
+            possession = False
+            disk_position = 64
+
+        if -23.0 < disk_position and < 0.0:
+            scored = True
+
+    return scored, disk_position
 
 class PointSimulator(object):
     def __init__(self, starting_disk_position=50):
@@ -76,13 +88,14 @@ class PointSimulator(object):
     def simulate_point(self, receiving_team, pulling_team):
 
         disk_position = self.starting_disk_position
-        team_on_offense, team_on_defense = receiving_team, pulling_team
+        team_on_offense = receiving_team 
+        team_on_defense = pulling_team
 
         while True:
             team_on_offense.possessions += 1
             point_scored, new_disk_position = simulate_possession(
-                                                        team_on_offense,
-                                                        disk_position,
+                                                    team_on_offense,
+                                                    disk_position,
                                                                 )
             if point_scored: 
                 team_on_offense.score += 1
@@ -120,13 +133,13 @@ class GameSimulator(object):
 
 class Team(object):
     def __init__(self, decides_pass_distance, catcher):
-        self._score = 0
-        self.games_won = 0
         self._decides_pass_distance = decides_pass_distance
         self._catcher = catcher
         self.possessions = 0
         self.attempted_passes = 0
         self.total_points_scored = 0
+        self._score = 0
+        self.games_won = 0
         
 
     def pass_distance(self, distance_to_goal):
@@ -159,6 +172,13 @@ class Team(object):
 def simulate_games(team_1_distance, 
                    team_2_distance,
                    games_to_simulate=1000):
+
+    '''Facade that build Teams and simulates games between them.
+
+    team_distance arguments are the distances the teams will try
+    to throw the disk.
+
+    '''
     
     team_1_distance_chooser = DistanceChooser(team_1_distance)
     team_2_distance_chooser = DistanceChooser(team_2_distance)
@@ -180,15 +200,17 @@ def simulate_games(team_1_distance,
 
     return teams
 
+def team_results_string(team):
+    str_args = (team.games_won, 
+                team.passes_per_possession, 
+                team.possessions_per_point)
+
+    return 'won %s games, with %.02f passes per possession, %.02f posessions per point' % str_args
+
 def main():
     teams = simulate_games(*map(float, sys.argv[1:3]))
     for team_name, team in  zip(('team_1', 'team_2'), teams):
-        str_args = (team_name, 
-                    team.games_won, 
-                    team.passes_per_possession, 
-                    team.possessions_per_point)
-
-        print '%s won %s games, with %.02f passes per possession, %.02f posessions per point' % str_args
+        print '%s: %s' % (team_name, team_results_string(team))
 
     return 0
 
