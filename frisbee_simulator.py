@@ -48,6 +48,43 @@ class DistanceChooser(object):
 
         return distance
 
+class Team(object):
+    def __init__(self, decides_pass_distance, catcher):
+        self._decides_pass_distance = decides_pass_distance
+        self._catcher = catcher
+        self.possessions = 0
+        self.attempted_passes = 0
+        self.total_points_scored = 0
+        self._score = 0
+        self.games_won = 0
+        
+
+    def pass_distance(self, distance_to_goal):
+        self.attempted_passes += 1
+        return self._decides_pass_distance.pass_distance(distance_to_goal)
+
+    def catch_pass(self, pass_distance):
+        return self._catcher.catch(pass_distance)
+
+    @property
+    def score(self):
+        return self._score
+
+    @score.setter
+    def score(self, value):
+        if value != self._score + 1 and value != 0:
+            raise Exception('can only increment score by 1')
+        self._score = value
+        self.total_points_scored += 1
+
+
+    @property
+    def passes_per_possession(self):
+        return self.attempted_passes / self.possessions
+
+    @property
+    def possessions_per_point(self):
+        return self.possessions / self.total_points_scored
 
 def simulate_possession(team, disk_position):
     '''Returns True if the team scores.
@@ -131,43 +168,6 @@ class GameSimulator(object):
                     receiving_team, pulling_team = (pulling_team, 
                                                     receiving_team)
 
-class Team(object):
-    def __init__(self, decides_pass_distance, catcher):
-        self._decides_pass_distance = decides_pass_distance
-        self._catcher = catcher
-        self.possessions = 0
-        self.attempted_passes = 0
-        self.total_points_scored = 0
-        self._score = 0
-        self.games_won = 0
-        
-
-    def pass_distance(self, distance_to_goal):
-        self.attempted_passes += 1
-        return self._decides_pass_distance.pass_distance(distance_to_goal)
-
-    def catch_pass(self, pass_distance):
-        return self._catcher.catch(pass_distance)
-
-    @property
-    def score(self):
-        return self._score
-
-    @score.setter
-    def score(self, value):
-        if value != self._score + 1 and value != 0:
-            raise Exception('can only increment score by 1')
-        self._score = value
-        self.total_points_scored += 1
-
-
-    @property
-    def passes_per_possession(self):
-        return self.attempted_passes / self.possessions
-
-    @property
-    def possessions_per_point(self):
-        return self.possessions / self.total_points_scored
 
 def simulate_games(team_1_distance, 
                    team_2_distance,
