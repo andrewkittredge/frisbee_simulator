@@ -66,6 +66,13 @@ class Team(object):
     def catch_pass(self, pass_distance):
         return self._catcher.catch(pass_distance)
 
+    def pull(self):
+        '''Return the distance the team pulls the disk.
+
+        '''
+
+        return 50.0
+
     @property
     def score(self):
         return self._score
@@ -130,10 +137,12 @@ class PointSimulator(object):
 
         '''
 
-        disk_position = self.starting_disk_position
         offense = receiving_team 
         defense = pulling_team
         scored = False
+
+
+        disk_position = pulling_team.pull()
 
         scored, new_disk_position = simulate_possession(
                                                     offense,
