@@ -124,6 +124,11 @@ class PointSimulator(object):
         self.starting_disk_position = starting_disk_position
 
     def simulate_point(self, receiving_team, pulling_team):
+        '''Simulate a point.
+        
+        Returns the teams that scored.
+
+        '''
 
         disk_position = self.starting_disk_position
         offense = receiving_team 
@@ -145,32 +150,37 @@ class PointSimulator(object):
                                                             )
 
         offense.score += 1
+        return offense
 
 
 class GameSimulator(object):
-    def __init__(self, simulate_point, teams):
+    def __init__(self, simulate_point):
         self.simulate_point = simulate_point
-        self.teams = teams
 
 
-    def simulate_game(self):
+    def simulate_game(self, teams):
+        '''Returns the winning team.
 
-        teams = self.teams
+
+        '''
+
         first_half = True
+        last_score = 0
 
-        receiving_team, pulling_team = teams
-        receiving_team.score, pulling_team.score = 0, 0
-        while True:
-            self.simulate_point(receiving_team, pulling_team)
-            for team in teams:
-                if team.score == 15:
-                    team.games_won += 1
-                    return
-                if team.score == 8 and first_half: #halftime
-                    first_half = False
-                    receiving_team, pulling_team = (pulling_team, 
-                                                    receiving_team)
+        receiving, pulling = teams
+        receiving.score, pulling.score = 0, 0
+        
+        while last_score <= 15:
 
+            scored = self.simulate_point(receiving, pulling)
+            last_score = scored.score
+            pulling, receiving = teams if teams[0] == scored else reversed(teams)
+
+            if last_score == 8 and first_half:
+                first_half = False
+                receiving, pulling = pulling, receiving
+        
+        return scored
 
 def simulate_games(team_1_distance, 
                    team_2_distance,
@@ -195,11 +205,11 @@ def simulate_games(team_1_distance,
     teams = (team_1, team_2)
 
     point_simulator = PointSimulator()
-    game_simulator = GameSimulator(point_simulator.simulate_point,
-                                   teams)
+    game_simulator = GameSimulator(point_simulator.simulate_point)
        
     for i in xrange(0, games_to_simulate):
-        game_simulator.simulate_game()
+        winner = game_simulator.simulate_game(teams)
+        winner.games_won += 1
 
     return teams
 
