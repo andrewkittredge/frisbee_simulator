@@ -12,6 +12,7 @@ import random
 import sys
 
 DROP_CONSTANT=.94
+DEFAULT_PULL_DISTANCE=40.0
 
 CATCH_PROBABILITY_FUNC = lambda distance : (1 - ( distance / 110) * .5) * DROP_CONSTANT
 
@@ -71,7 +72,7 @@ class Team(object):
 
         '''
 
-        return 50.0
+        return DEFAULT_PULL_DISTANCE
 
     @property
     def score(self):
@@ -159,7 +160,7 @@ class PointSimulator(object):
                                                             )
 
         offense.score += 1
-        return offense
+        return offense, defense
 
 
 class GameSimulator(object):
@@ -173,21 +174,18 @@ class GameSimulator(object):
 
         '''
 
-        first_half = True
-        last_score = 0
-
         receiving, pulling = teams
         receiving.score, pulling.score = 0, 0
         
-        while last_score <= 15:
+        while pulling.score <= 15:
 
-            scored = self.simulate_point(receiving, pulling)
-            last_score = scored.score
-            pulling, receiving = teams if teams[0] == scored else reversed(teams)
+            scored, did_not_score = self.simulate_point(receiving, pulling)
 
-            if last_score == 8 and first_half:
-                first_half = False
-                receiving, pulling = pulling, receiving
+            if scored.score == 8 and did_not_score.score < 8:
+                #half-time
+                receiving, pulling = reversed(teams) 
+            else:
+                receiving, pulling = did_not_score, scored
         
         return scored
 
