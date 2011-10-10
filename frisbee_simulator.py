@@ -134,7 +134,7 @@ class PointSimulator(object):
     def simulate_point(self, receiving_team, pulling_team):
         '''Simulate a point.
         
-        Returns the teams that scored.
+        Returns the team that scored.
 
         '''
 
@@ -145,21 +145,20 @@ class PointSimulator(object):
 
         disk_position = pulling_team.pull()
 
-        scored, new_disk_position = simulate_possession(
+        scored, disk_position = simulate_possession(
                                                     offense,
                                                     disk_position,
                                                         )
 
         while not scored:
             offense, defense = defense, offense
-            disk_position = 64.0 - new_disk_position
+            disk_position = 64.0 - disk_position
 
-            scored, new_disk_position = simulate_possession(
+            scored, disk_position = simulate_possession(
                                                     offense,
                                                     disk_position,
                                                             )
 
-        offense.score += 1
         return offense, defense
 
 
@@ -171,15 +170,16 @@ class GameSimulator(object):
     def simulate_game(self, teams):
         '''Returns the winning team.
 
-
         '''
 
         receiving, pulling = teams
         receiving.score, pulling.score = 0, 0
+        scored = receiving
         
-        while pulling.score <= 15:
+        while scored.score < 15:
 
             scored, did_not_score = self.simulate_point(receiving, pulling)
+            scored.score += 1
 
             if scored.score == 8 and did_not_score.score < 8:
                 #half-time
